@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Task Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="bg-gray-50 font-sans">
+    <nav class="bg-indigo-600 text-white p-4">
+        <div class="container mx-auto flex justify-between items-center max-w-xl">
+            <h1 class="text-lg font-semibold">Tasks</h1>
+            <div class="space-x-4">
+                <a href="/" class="hover:bg-indigo-700 px-4 py-1 rounded-md transition">Tasks</a>
+                <a href="/profile" class="bg-indigo-800 px-4 py-1 rounded-md">Profile</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-4 max-w-xl">
+        <div class="bg-white p-6 rounded-md shadow-sm mt-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">Update Profile</h2>
+            <input type="email" id="email" placeholder="Email" class="w-full p-3 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 mb-3">
+            <input type="password" id="password" placeholder="New Password (optional)" class="w-full p-3 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 mb-3">
+            <div class="flex justify-center space-x-4">
+                <button onclick="updateProfile()" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition">Update</button>
+                <button onclick="showLogoutConfirmation()" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-4 right-4 p-3 rounded-md shadow-md text-white hidden"></div>
+    <div id="logout-confirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-md shadow-sm text-center max-w-sm w-full">
+            <h2 class="text-lg font-semibold mb-3 text-gray-800">Confirm Logout</h2>
+            <p class="mb-4 text-gray-600 text-sm">Are you sure?</p>
+            <div class="flex justify-center space-x-3">
+                <button onclick="confirmLogout()" class="bg-indigo-600 text-white px-4 py-1 rounded-md hover:bg-indigo-700 transition">Yes</button>
+                <button onclick="hideLogoutConfirmation()" class="bg-gray-200 text-gray-800 px-4 py-1 rounded-md hover:bg-gray-300 transition">No</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/scripts.js"></script>
+    <script>
+        async function loadUserProfile() {
+            const response = await fetch('/api/user', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const user = await response.json();
+            document.getElementById('email').value = user.email;
+        }
+
+        async function updateProfile() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            try {
+                const response = await fetch('/profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, password: password || '' })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showToast(data.message, 'success');
+                    setTimeout(() => loadUserProfile(), 1000);
+                } else {
+                    showToast(data.error, 'error');
+                }
+            } catch (error) {
+                showToast('Failed to update profile', 'error');
+                console.error('Error updating profile:', error);
+            }
+        }
+
+        function showLogoutConfirmation() {
+            document.getElementById('logout-confirmation').classList.remove('hidden');
+        }
+
+        function hideLogoutConfirmation() {
+            document.getElementById('logout-confirmation').classList.add('hidden');
+        }
+
+        async function confirmLogout() {
+            try {
+                const response = await fetch('/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showToast(data.message, 'success');
+                    setTimeout(() => window.location.href = '/login', 1000);
+                } else {
+                    showToast(data.error, 'error');
+                }
+            } catch (error) {
+                showToast('Failed to logout', 'error');
+                console.error('Error logging out:', error);
+            }
+            hideLogoutConfirmation();
+        }
+
+        document.addEventListener('DOMContentLoaded', loadUserProfile);
+    </script>
+</body>
+</html>

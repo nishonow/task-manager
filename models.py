@@ -11,6 +11,7 @@ class User(UserMixin, Base):
     email = Column(String, unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)
     tasks = relationship("Task", back_populates="user")
+    is_admin = Column(Boolean, default=False)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

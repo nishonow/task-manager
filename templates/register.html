@@ -1,57 +1,46 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - Task Manager</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/styles.css">
-</head>
-<body class="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 min-h-screen flex items-center justify-center">
-    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">Register</h1>
-        <div class="flex flex-col space-y-4">
-            <input type="email" id="email" placeholder="Email" class="p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <input type="password" id="password" placeholder="Password" class="p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <button onclick="register()" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 transition">Register</button>
-            <p class="text-center text-gray-600">Already have an account? <a href="/login" class="text-indigo-600 hover:underline">Login</a></p>
-        </div>
+{% extends "base.html" %}
+
+{% block title %}Register - Task Manager{% endblock %}
+
+{% block body_class %}bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 min-h-screen flex items-center justify-center{% endblock %}
+
+{% block content %}
+<div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+    <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">Register</h1>
+    <div class="flex flex-col space-y-4">
+        <input type="email" id="email" placeholder="Email" class="p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <input type="password" id="password" placeholder="Password" class="p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <button id="registerBtn" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 transition">Register</button>
+        <p class="text-center text-gray-600">Already have an account? <a href="/login" class="text-indigo-600 hover:underline">Login</a></p>
     </div>
+</div>
+{% endblock %}
 
-    <div id="toast" class="fixed bottom-4 right-4 p-4 rounded-lg shadow-lg text-white hidden"></div>
+{% block scripts %}
+<script>
+    document.getElementById('registerBtn').addEventListener('click', async function() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
 
-    <script>
-        async function register() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            try {
-                const response = await fetch('/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                const data = await response.json();
-                if (response.ok) {
-                    showToast(data.message, 'success');
-                    setTimeout(() => window.location.href = '/', 1000);
-                } else {
-                    showToast(data.error, 'error');
-                }
-            } catch (error) {
-                showToast('Failed to register', 'error');
-                console.error('Error registering:', error);
+        try {
+            const response = await fetch('/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showToast(data.message, 'success');
+                setTimeout(() => window.location.href = '/', 1000);
+            } else {
+                showToast(data.error, 'error');
             }
+        } catch (error) {
+            showToast('Failed to register', 'error');
+            console.error('Error registering:', error);
         }
-
-        function showToast(message, type) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = `fixed bottom-4 right-4 p-4 rounded-lg shadow-lg text-white ${type}`;
-            toast.style.display = 'block';
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 3000);
-        }
-    </script>
-</body>
-</html>
+    });
+</script>
+{% endblock %}

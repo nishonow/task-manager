@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - Task Manager{% endblock %}
+
+{% block body_class %}bg-gray-100{% endblock %}
+
+{% block nav %}
+<nav class="bg-gray-800 text-white p-4">
+    <div class="container mx-auto flex justify-between items-center max-w-6xl">
+        <h1 class="text-lg font-semibold">Admin Panel</h1>
+        <div class="space-x-4">
+            <button id="usersTabBtn" class="tab-btn bg-gray-700 px-4 py-1 rounded-md">Users</button>
+            <button id="tasksTabBtn" class="tab-btn hover:bg-gray-700 px-4 py-1 rounded-md">Tasks</button>
+            <button onclick="logout()" class="hover:bg-gray-700 px-4 py-1 rounded-md transition">Logout</button>
+        </div>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4 max-w-6xl">
+    <!-- Users Tab -->
+    <div id="usersTab" class="tab-content bg-white p-6 rounded-md shadow-md mt-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-semibold text-gray-800">User Management</h2>
+            <span class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm">
+                Total Users: {{ users|length }}
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white border border-gray-200">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="py-3 px-4 text-left border-b">ID</th>
+                        <th class="py-3 px-4 text-left border-b">Email</th>
+                        <th class="py-3 px-4 text-left border-b">Password</th>
+                        <th class="py-3 px-4 text-left border-b">Admin</th>
+                        <th class="py-3 px-4 text-left border-b">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-3 px-4 border-b">{{ user.id }}</td>
+                        <td class="py-3 px-4 border-b">{{ user.email }}</td>
+                        <td class="py-3 px-4 border-b text-xs font-mono">
+                            {{ user.password_hash[:15] }}...
+                            <span class="text-gray-400">(truncated)</span>
+                        </td>
+                        <td class="py-3 px-4 border-b">
+                            <span class="px-2 py-1 rounded-full text-xs {% if user.is_admin %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {% if user.is_admin %}Yes{% else %}No{% endif %}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 border-b">
+                            <button onclick="toggleAdmin({{ user.id }})" class="text-indigo-600 hover:text-indigo-800 mr-2 text-sm">
+                                {% if user.is_admin %}Remove Admin{% else %}Make Admin{% endif %}
+                            </button>
+                            {% if user.id != current_user.id %}
+                            <button onclick="deleteUser({{ user.id }})" class="text-red-600 hover:text-red-800 text-sm">
+                                Delete
+                            </button>
+                            {% else %}
+                            <span class="text-gray-400 text-sm">Current User</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Tasks Tab -->
+    <div id="tasksTab" class="tab-content hidden bg-white p-6 rounded-md shadow-md mt-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-semibold text-gray-800">All Tasks</h2>
+            <span class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm">
+                Total Tasks: {{ tasks|length }}
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white border border-gray-200">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="py-3 px-4 text-left border-b">ID</th>
+                        <th class="py-3 px-4 text-left border-b">User Email</th>
+                        <th class="py-3 px-4 text-left border-b">Title</th>
+                        <th class="py-3 px-4 text-left border-b">Description</th>
+                        <th class="py-3 px-4 text-left border-b">Status</th>
+                        <th class="py-3 px-4 text-left border-b">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in tasks %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-3 px-4 border-b">{{ task.id }}</td>
+                        <td class="py-3 px-4 border-b">{{ task.user_email }}</td>
+                        <td class="py-3 px-4 border-b">{{ task.title }}</td>
+                        <td class="py-3 px-4 border-b max-w-xs truncate">{{ task.description }}</td>
+                        <td class="py-3 px-4 border-b">
+                            <span class="px-2 py-1 rounded-full text-xs {% if task.completed %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {% if task.completed %}Completed{% else %}Pending{% endif %}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 border-b">
+                            <button onclick="toggleTaskStatus({{ task.id }})" class="text-indigo-600 hover:text-indigo-800 mr-2 text-sm">
+                                {% if task.completed %}Mark Incomplete{% else %}Mark Complete{% endif %}
+                            </button>
+                            <button onclick="deleteTask({{ task.id }})" class="text-red-600 hover:text-red-800 text-sm">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Tab switching functionality
+    document.getElementById('usersTabBtn').addEventListener('click', function() {
+        showTab('usersTab');
+        document.getElementById('usersTabBtn').classList.add('bg-gray-700');
+        document.getElementById('tasksTabBtn').classList.remove('bg-gray-700');
+    });
+
+    document.getElementById('tasksTabBtn').addEventListener('click', function() {
+        showTab('tasksTab');
+        document.getElementById('tasksTabBtn').classList.add('bg-gray-700');
+        document.getElementById('usersTabBtn').classList.remove('bg-gray-700');
+    });
+
+    function showTab(tabId) {
+        const tabs = document.querySelectorAll('.tab-content');
+        tabs.forEach(tab => tab.classList.add('hidden'));
+        document.getElementById(tabId).classList.remove('hidden');
+    }
+
+    async function toggleAdmin(userId) {
+        try {
+            const response = await fetch(`/admin/toggle-admin/${userId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            if (response.ok) {
+                showToast(data.message, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            showToast('Failed to update admin status', 'error');
+            console.error('Error:', error);
+        }
+    }
+
+    async function deleteUser(userId) {
+        if (!confirm('Are you sure you want to delete this user?')) return;
+
+        try {
+            const response = await fetch(`/admin/delete-user/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (response.status === 500) {
+                showToast('Server error occurred. Check server logs.', 'error');
+                return;
+            }
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (jsonError) {
+                console.error('Failed to parse JSON response:', jsonError);
+                showToast('Invalid response from server', 'error');
+                return;
+            }
+
+            if (response.ok) {
+                showToast(data.message, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast(data.error || 'Error deleting user', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            showToast('Failed to delete user. Check console for details.', 'error');
+        }
+    }
+
+    async function toggleTaskStatus(taskId) {
+        try {
+            const response = await fetch(`/admin/toggle-task-status/${taskId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            if (response.ok) {
+                showToast(data.message, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            showToast('Failed to update task status', 'error');
+            console.error('Error:', error);
+        }
+    }
+
+    async function deleteTask(taskId) {
+        if (!confirm('Are you sure you want to delete this task?')) return;
+
+        try {
+            const response = await fetch(`/admin/delete-task/${taskId}`, {
+                method: 'DELETE'
+            });
+            const data = await response.json();
+            if (response.ok) {
+                showToast(data.message, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            showToast('Failed to delete task', 'error');
+            console.error('Error:', error);
+        }
+    }
+
+    async function logout() {
+        try {
+            const response = await fetch('/logout', {
+                method: 'POST'
+            });
+            const data = await response.json();
+            if (response.ok) {
+                showToast(data.message, 'success');
+                setTimeout(() => window.location.href = '/login', 1000);
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            showToast('Failed to logout', 'error');
+            console.error('Error logging out:', error);
+        }
+    }
+</script>
+{% endblock %}

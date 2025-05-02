@@ -6,7 +6,7 @@ import logging
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 
 app = Flask(__name__, static_folder='static')
-app.secret_key = 'your-secret-key'  # Replace with a secure key
+app.secret_key = 'your-secret-key'
 logging.basicConfig(level=logging.DEBUG)
 
 login_manager = LoginManager()
@@ -30,11 +30,16 @@ def get_db():
     finally:
         db.close()
 
+
 @app.route('/')
 def serve_index():
-    if current_user.is_authenticated:
-        return render_template('index.html')
-    return redirect(url_for('login'))
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
+
+    if current_user.is_admin:
+        return redirect(url_for('admin_panel'))
+
+    return render_template('index.html')
 
 @app.route('/styles.css')
 def serve_styles():
@@ -44,10 +49,122 @@ def serve_styles():
 def serve_scripts():
     return send_from_directory('static', 'scripts.js')
 
+
+@app.route('/admin')
+@login_required
+def admin_panel():
+    if not current_user.is_admin:
+        flash('Access denied: Admin privileges required')
+        return redirect(url_for('serve_index'))
+
+    db = next(get_db())
+    users = db.query(models.User).all()
+
+    tasks = db.query(models.Task, models.User.email).join(
+        models.User, models.Task.user_id == models.User.id
+    ).all()
+
+    formatted_tasks = []
+    for task, user_email in tasks:
+        formatted_tasks.append({
+            'id': task.id,
+            'title': task.title,
+            'description': task.description or '',
+            'completed': task.completed,
+            'user_email': user_email,
+            'user_id': task.user_id
+        })
+
+    return render_template('admin.html', users=users, tasks=formatted_tasks, current_user=current_user)
+
+
+@app.route('/admin/toggle-admin/<int:user_id>', methods=['POST'])
+@login_required
+def toggle_admin(user_id):
+    if not current_user.is_admin:
+        return jsonify({"error": "Access denied: Admin privileges required"}), 403
+
+    db = next(get_db())
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    user.is_admin = not user.is_admin
+    db.commit()
+
+    return jsonify({"message": f"Admin status updated for {user.email}"})
+
+
+@app.route('/admin/delete-user/<int:user_id>', methods=['DELETE'])
+@login_required
+def delete_user(user_id):
+    if not current_user.is_admin:
+        return jsonify({"error": "Access denied: Admin privileges required"}), 403
+
+    if current_user.id == user_id:
+        return jsonify({"error": "Cannot delete yourself"}), 400
+    try:
+        db = next(get_db())
+        user = db.query(models.User).filter(models.User.id == user_id).first()
+
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        tasks = db.query(models.Task).filter(models.Task.user_id == user_id).all()
+        for task in tasks:
+            db.delete(task)
+
+        db.delete(user)
+        db.commit()
+
+        return jsonify({"message": f"User {user.email} has been deleted"}), 200
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting user: {str(e)}")
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+
+@app.route('/admin/toggle-task-status/<int:task_id>', methods=['POST'])
+@login_required
+def toggle_task_status(task_id):
+    if not current_user.is_admin:
+        return jsonify({"error": "Access denied: Admin privileges required"}), 403
+
+    db = next(get_db())
+    task = db.query(models.Task).filter(models.Task.id == task_id).first()
+
+    if not task:
+        return jsonify({"error": "Task not found"}), 404
+
+    task.completed = not task.completed
+    db.commit()
+
+    return jsonify({"message": f"Task status updated successfully"})
+
+@app.route('/admin/delete-task/<int:task_id>', methods=['DELETE'])
+@login_required
+def admin_delete_task(task_id):
+    if not current_user.is_admin:
+        return jsonify({"error": "Access denied: Admin privileges required"}), 403
+
+    db = next(get_db())
+    task = db.query(models.Task).filter(models.Task.id == task_id).first()
+
+    if not task:
+        return jsonify({"error": "Task not found"}), 404
+
+    db.delete(task)
+    db.commit()
+
+    return jsonify({"message": f"Task deleted successfully"})
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
+        if current_user.is_admin:
+            return redirect(url_for('admin_panel'))
         return redirect(url_for('serve_index'))
+
     if request.method == 'POST':
         email = request.json.get('email')
         password = request.json.get('password')
@@ -55,7 +172,9 @@ def login():
         user = db.query(models.User).filter(models.User.email == email).first()
         if user and user.check_password(password):
             login_user(user)
-            return jsonify({"message": "Logged in successfully"}), 200
+            if user.is_admin:
+                return jsonify({"message": "Logged in successfully", "redirect": "/admin"}), 200
+            return jsonify({"message": "Logged in successfully", "redirect": "/"}), 200
         return jsonify({"error": "Invalid email or password"}), 401
     return render_template('login.html')
 
@@ -110,7 +229,7 @@ def profile():
             if new_password:
                 user.set_password(new_password)
 
-            db.add(user)  # Ensure the user is added to the session
+            db.add(user)
             db.commit()
             return jsonify({"message": "Profile updated successfully"}), 200
         except Exception as e:
@@ -225,5 +344,20 @@ def delete_task(task_id):
         logging.error(f"Error in delete_task: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
+
+def create_admin():
+    db = next(get_db())
+    admin = db.query(models.User).filter(models.User.email == "admin@gmail.com").first()
+
+    if not admin:
+        admin = models.User(email="admin@gmail.com", is_admin=True)
+        admin.set_password("admin123")
+        db.add(admin)
+        db.commit()
+    else:
+        admin.is_admin = True
+        db.commit()
+
 if __name__ == '__main__':
-    app.run(debug=True, port=8080)
+    create_admin()
+    app.run(debug=False)

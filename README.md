@@ -33,4 +33,4 @@ A simple web-based task manager with user authentication, built using Python (Fl
 ├── requirements.txt
 ├── tasks.db
 ├── .gitignore
-└── README.md```
+└── README.md

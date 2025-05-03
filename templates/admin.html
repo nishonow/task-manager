@@ -5,25 +5,25 @@
 {% block body_class %}bg-gray-100{% endblock %}
 
 {% block nav %}
-<nav class="bg-gray-800 text-white p-4">
-    <div class="container mx-auto flex justify-between items-center max-w-6xl">
-        <h1 class="text-lg font-semibold">Admin Panel</h1>
-        <div class="space-x-4">
-            <button id="usersTabBtn" class="tab-btn bg-gray-700 px-4 py-1 rounded-md">Users</button>
-            <button id="tasksTabBtn" class="tab-btn hover:bg-gray-700 px-4 py-1 rounded-md">Tasks</button>
-            <button onclick="window.location.href='/profile'" class="hover:bg-gray-700 px-4 py-1 rounded-md transition">Profile</button>
-            <button onclick="logout()" class="hover:bg-gray-700 px-4 py-1 rounded-md transition">Logout</button>
+<nav class="bg-gray-800 text-white p-3 sm:p-4">
+    <div class="container mx-auto flex flex-col sm:flex-row justify-between items-center sm:max-w-6xl">
+        <h1 class="text-lg font-semibold mb-2 sm:mb-0">Admin Panel</h1>
+        <div class="flex flex-wrap justify-center gap-2 sm:space-x-4">
+            <button id="usersTabBtn" class="tab-btn bg-gray-700 px-3 py-1 rounded-md text-sm sm:text-base">Users</button>
+            <button id="tasksTabBtn" class="tab-btn hover:bg-gray-700 px-3 py-1 rounded-md text-sm sm:text-base">Tasks</button>
+            <button id="profileTabBtn" class="tab-btn hover:bg-gray-700 px-3 py-1 rounded-md text-sm sm:text-base">Profile</button>
+            <button onclick="showLogoutModal()" class="hover:bg-gray-700 px-3 py-1 rounded-md transition text-sm sm:text-base">Logout</button>
         </div>
     </div>
 </nav>
 {% endblock %}
 
 {% block content %}
-<div class="container mx-auto p-4 max-w-6xl">
+<div class="container mx-auto px-2 sm:px-4 py-2 sm:py-4 max-w-6xl">
     <!-- Users Tab -->
-    <div id="usersTab" class="tab-content bg-white p-6 rounded-md shadow-md mt-6">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-semibold text-gray-800">User Management</h2>
+    <div id="usersTab" class="tab-content bg-white p-3 sm:p-6 rounded-md shadow-md mt-4 sm:mt-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6">
+            <h2 class="text-xl sm:text-2xl font-semibold text-gray-800 mb-2 sm:mb-0">User Management</h2>
             <span class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm">
                 Total Users: {{ users|length }}
             </span>
@@ -33,38 +33,40 @@
             <table class="min-w-full bg-white border border-gray-200">
                 <thead class="bg-gray-100">
                     <tr>
-                        <th class="py-3 px-4 text-left border-b">ID</th>
-                        <th class="py-3 px-4 text-left border-b">Email</th>
-                        <th class="py-3 px-4 text-left border-b">Password</th>
-                        <th class="py-3 px-4 text-left border-b">Admin</th>
-                        <th class="py-3 px-4 text-left border-b">Actions</th>
+                        <th class="py-2 sm:py-3 px-2 sm:px-4 text-left border-b text-xs sm:text-sm">ID</th>
+                        <th class="py-2 sm:py-3 px-2 sm:px-4 text-left border-b text-xs sm:text-sm">Email</th>
+                        <th class="py-2 sm:py-3 px-2 sm:px-4 text-left border-b text-xs sm:text-sm">Password</th>
+                        <th class="py-2 sm:py-3 px-2 sm:px-4 text-left border-b text-xs sm:text-sm">Admin</th>
+                        <th class="py-2 sm:py-3 px-2 sm:px-4 text-left border-b text-xs sm:text-sm">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for user in users %}
                     <tr class="hover:bg-gray-50">
-                        <td class="py-3 px-4 border-b">{{ user.id }}</td>
-                        <td class="py-3 px-4 border-b">{{ user.email }}</td>
-                        <td class="py-3 px-4 border-b text-xs font-mono">
-                            {{ user.password_hash[:15] }}...
+                        <td class="py-2 sm:py-3 px-2 sm:px-4 border-b text-xs sm:text-sm">{{ user.id }}</td>
+                        <td class="py-2 sm:py-3 px-2 sm:px-4 border-b text-xs sm:text-sm">{{ user.email }}</td>
+                        <td class="py-2 sm:py-3 px-2 sm:px-4 border-b text-xs font-mono">
+                            {{ user.password_hash[:10] }}...
                             <span class="text-gray-400">(truncated)</span>
                         </td>
-                        <td class="py-3 px-4 border-b">
-                            <span class="px-2 py-1 rounded-full text-xs {% if user.is_admin %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                        <td class="py-2 sm:py-3 px-2 sm:px-4 border-b">
+                            <span class="px-1.5 py-0.5 rounded-full text-xs {% if user.is_admin %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
                                 {% if user.is_admin %}Yes{% else %}No{% endif %}
                             </span>
                         </td>
-                        <td class="py-3 px-4 border-b">
-                            <button onclick="toggleAdmin({{ user.id }})" class="text-indigo-600 hover:text-indigo-800 mr-2 text-sm">
-                                {% if user.is_admin %}Remove Admin{% else %}Make Admin{% endif %}
-                            </button>
-                            {% if user.id != current_user.id %}
-                            <button onclick="deleteUser({{ user.id }})" class="text-red-600 hover:text-red-800 text-sm">
-                                Delete
-                            </button>
-                            {% else %}
-                            <span class="text-gray-400 text-sm">Current User</span>
-                            {% endif %}
+                        <td class="py-2 sm:py-3 px-2 sm:px-4 border-b">
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                <button onclick="toggleAdmin({{ user.id }})" class="text-indigo-600 hover:text-indigo-800 text-xs sm:text-sm">
+                                    {% if user.is_admin %}Remove Admin{% else %}Make Admin{% endif %}
+                                </button>
+                                {% if user.id != current_user.id %}
+                                <button onclick="deleteUser({{ user.id }})" class="text-red-600 hover:text-red-800 text-xs sm:text-sm">
+                                    Delete
+                                </button>
+                                {% else %}
+                                <span class="text-gray-400 text-xs sm:text-sm">Current User</span>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -74,9 +76,9 @@
     </div>
 
     <!-- Tasks Tab -->
-    <div id="tasksTab" class="tab-content hidden bg-white p-6 rounded-md shadow-md mt-6">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-semibold text-gray-800">All Tasks</h2>
+    <div id="tasksTab" class="tab-content hidden bg-white p-3 sm:p-6 rounded-md shadow-md mt-4 sm:mt-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6">
+            <h2 class="text-xl sm:text-2xl font-semibold text-gray-800 mb-2 sm:mb-0">All Tasks</h2>
             <span class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm">
                 Total Tasks: {{ tasks|length }}
             </span>
@@ -86,33 +88,35 @@
             <table class="min-w-full bg-white border border-gray-200">
                 <thead class="bg-gray-100">
                     <tr>
-                        <th class="py-3 px-4 text-left border-b">ID</th>
-                        <th class="py-3 px-4 text-left border-b">User Email</th>
-                        <th class="py-3 px-4 text-left border-b">Title</th>
-                        <th class="py-3 px-4 text-left border-b">Description</th>
-                        <th class="py-3 px-4 text-left border-b">Status</th>
-                        <th class="py-3 px-4 text-left border-b">Actions</th>
+                        <th class="py-2 sm:py-3 px-2 sm:px-4 text-left border-b text-xs sm:text-sm">ID</th>
+                        <th class="py-2 sm:py-3 px-2 sm:px-4 text-left border-b text-xs sm:text-sm">User</th>
+                        <th class="py-2 sm:py-3 px-2 sm:px-4 text-left border-b text-xs sm:text-sm">Title</th>
+                        <th class="py-2 sm:py-3 px-2 sm:px-4 text-left border-b text-xs sm:text-sm">Description</th>
+                        <th class="py-2 sm:py-3 px-2 sm:px-4 text-left border-b text-xs sm:text-sm">Status</th>
+                        <th class="py-2 sm:py-3 px-2 sm:px-4 text-left border-b text-xs sm:text-sm">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for task in tasks %}
                     <tr class="hover:bg-gray-50">
-                        <td class="py-3 px-4 border-b">{{ task.id }}</td>
-                        <td class="py-3 px-4 border-b">{{ task.user_email }}</td>
-                        <td class="py-3 px-4 border-b">{{ task.title }}</td>
-                        <td class="py-3 px-4 border-b max-w-xs truncate">{{ task.description }}</td>
-                        <td class="py-3 px-4 border-b">
-                            <span class="px-2 py-1 rounded-full text-xs {% if task.completed %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
-                                {% if task.completed %}Completed{% else %}Pending{% endif %}
+                        <td class="py-2 sm:py-3 px-2 sm:px-4 border-b text-xs sm:text-sm">{{ task.id }}</td>
+                        <td class="py-2 sm:py-3 px-2 sm:px-4 border-b text-xs sm:text-sm">{{ task.user_email }}</td>
+                        <td class="py-2 sm:py-3 px-2 sm:px-4 border-b text-xs sm:text-sm">{{ task.title }}</td>
+                        <td class="py-2 sm:py-3 px-2 sm:px-4 border-b max-w-[150px] sm:max-w-xs truncate text-xs sm:text-sm">{{ task.description }}</td>
+                        <td class="py-2 sm:py-3 px-2 sm:px-4 border-b">
+                            <span class="px-1.5 py-0.5 rounded-full text-xs {% if task.completed %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {% if task.completed %}Done{% else %}Pending{% endif %}
                             </span>
                         </td>
-                        <td class="py-3 px-4 border-b">
-                            <button onclick="toggleTaskStatus({{ task.id }})" class="text-indigo-600 hover:text-indigo-800 mr-2 text-sm">
-                                {% if task.completed %}Mark Incomplete{% else %}Mark Complete{% endif %}
-                            </button>
-                            <button onclick="deleteTask({{ task.id }})" class="text-red-600 hover:text-red-800 text-sm">
-                                Delete
-                            </button>
+                        <td class="py-2 sm:py-3 px-2 sm:px-4 border-b">
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                <button onclick="toggleTaskStatus({{ task.id }})" class="text-indigo-600 hover:text-indigo-800 text-xs sm:text-sm">
+                                    {% if task.completed %}Mark Incomplete{% else %}Complete{% endif %}
+                                </button>
+                                <button onclick="deleteTask({{ task.id }})" class="text-red-600 hover:text-red-800 text-xs sm:text-sm">
+                                    Delete
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -121,22 +125,101 @@
         </div>
     </div>
 </div>
+<!-- Profile Tab -->
+<div id="profileTab" class="tab-content hidden bg-white p-3 sm:p-6 rounded-md shadow-md mt-4 sm:mt-6 max-w-2xl mx-auto">
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold text-gray-800">Your Profile</h2>
+        <span class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs">Admin</span>
+    </div>
+
+    <div class="max-w-md mx-auto p-4 border border-gray-200 rounded-md">
+        <div class="space-y-4">
+            <div>
+                <label class="block text-gray-700 mb-1 text-sm font-medium">Email</label>
+                <input type="email" id="profileEmail" value="{{ current_user.email }}"
+                       class="w-full p-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm">
+            </div>
+
+            <div>
+                <label class="block text-gray-700 mb-1 text-sm font-medium">New Password</label>
+                <input type="password" id="profilePassword" placeholder="Leave blank to keep current"
+                       class="w-full p-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm">
+                <p class="text-xs text-gray-500 mt-1">Leave blank to keep your current password</p>
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button onclick="updateProfile()"
+                        class="bg-indigo-600 text-white px-3 py-1.5 rounded-md hover:bg-indigo-700 transition text-sm">
+                    Update Profile
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Logout Modal -->
+<div id="logoutModal" class="fixed inset-0 bg-gray-800 bg-opacity-50 backdrop-blur-sm flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-lg p-6 max-w-sm mx-auto shadow-2xl m-4">
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Confirm Logout</h3>
+        <p class="text-gray-600 mb-6">Are you sure you want to log out from your account?</p>
+        <div class="flex justify-end space-x-4">
+            <button id="cancelLogout" class="px-4 py-2 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 transition">
+                Cancel
+            </button>
+            <button id="confirmLogout" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition">
+                Logout
+            </button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // Tab switching functionality
+    document.getElementById('profileTabBtn').addEventListener('click', function() {
+        showTab('profileTab');
+        document.getElementById('profileTabBtn').classList.add('bg-gray-700');
+        document.getElementById('tasksTabBtn').classList.remove('bg-gray-700');
+        document.getElementById('usersTabBtn').classList.remove('bg-gray-700');
+    });
     document.getElementById('usersTabBtn').addEventListener('click', function() {
         showTab('usersTab');
         document.getElementById('usersTabBtn').classList.add('bg-gray-700');
         document.getElementById('tasksTabBtn').classList.remove('bg-gray-700');
+        document.getElementById('profileTabBtn').classList.remove('bg-gray-700');
     });
 
     document.getElementById('tasksTabBtn').addEventListener('click', function() {
         showTab('tasksTab');
         document.getElementById('tasksTabBtn').classList.add('bg-gray-700');
         document.getElementById('usersTabBtn').classList.remove('bg-gray-700');
+        document.getElementById('profileTabBtn').classList.remove('bg-gray-700');
     });
+
+    async function updateProfile() {
+        const email = document.getElementById('profileEmail').value.trim();
+        const password = document.getElementById('profilePassword').value;
+
+        try {
+            const response = await fetch('/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                showToast(data.message, 'success');
+                if (email !== '{{ current_user.email }}') {
+                    setTimeout(() => location.reload(), 1000);
+                }
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            showToast('Failed to update profile', 'error');
+            console.error('Error updating profile:', error);
+        }
+    }
 
     function showTab(tabId) {
         const tabs = document.querySelectorAll('.tab-content');
@@ -240,7 +323,20 @@
         }
     }
 
-    async function logout() {
+    function showLogoutModal() {
+        document.getElementById('logoutModal').classList.remove('hidden');
+
+        document.getElementById('cancelLogout').onclick = hideLogoutModal;
+        document.getElementById('confirmLogout').onclick = performLogout;
+    }
+
+    function hideLogoutModal() {
+        document.getElementById('logoutModal').classList.add('hidden');
+    }
+
+    async function performLogout() {
+        hideLogoutModal();
+
         try {
             const response = await fetch('/logout', {
                 method: 'POST'
